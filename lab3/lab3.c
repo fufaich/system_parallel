@@ -21,7 +21,6 @@ int main(int argc, char **argv) {
     int *sendcounts = NULL;
     int *displs = NULL;
 
-    // Генерация матрицы в процессе 0
     if (rank == 0) {
         matrix = malloc(4 * 9 * sizeof(short));
         srand(time(NULL));
@@ -35,13 +34,11 @@ int main(int argc, char **argv) {
             printf("\n");
         }
 
-        // Транспонирование матрицы
         transposed_flat = malloc(9 * 4 * sizeof(short));
         for (int i = 0; i < 9; i++) 
             for (int j = 0; j < 4; j++) 
                 transposed_flat[i*4 + j] = matrix[j*9 + i];
 
-        // Расчет параметров распределения
         sendcounts = malloc(size * sizeof(int));
         displs = malloc(size * sizeof(int));
         
@@ -57,25 +54,21 @@ int main(int argc, char **argv) {
         }
     }
 
-    // Расчет количества получаемых данных для текущего процесса
     int num_rows_base = 9 / size;
     int remainder = 9 % size;
     int num_rows = (rank < remainder) ? num_rows_base + 1 : num_rows_base;
     int recvcount = num_rows * 4;
     short *recvbuf = malloc(recvcount * sizeof(short));
 
-    // Распределение данных
     MPI_Scatterv(
         transposed_flat, sendcounts, displs, MPI_SHORT,
         recvbuf, recvcount, MPI_SHORT,
         0, MPI_COMM_WORLD
     );
 
-    // Сортировка полученных столбцов
     for (int i = 0; i < num_rows; i++) 
         qsort(recvbuf + i*4, 4, sizeof(short), compare_shorts);
 
-    // Сбор результатов
     short *gathered_transposed = NULL;
     if (rank == 0)
         gathered_transposed = malloc(9 * 4 * sizeof(short));
@@ -86,7 +79,6 @@ int main(int argc, char **argv) {
         0, MPI_COMM_WORLD
     );
 
-    // Вывод результатов в процессе 0
     if (rank == 0) {
         short sorted_matrix[4][9];
         for (int i = 0; i < 9; i++)
